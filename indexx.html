@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>for Sofie</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      background: #0a0812;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: Georgia, serif;
+    }
+
+    #lang-screen {
+      position: fixed; inset: 0;
+      background: #0a0812;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      z-index: 100;
+    }
+    #lang-screen p {
+      color: #ffffff55;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .lang-btns { display: flex; gap: 1.5rem; }
+    .lang-btn {
+      background: transparent;
+      border: 0.5px solid #ffffff33;
+      color: #ffffffaa;
+      font-family: Georgia, serif;
+      font-size: 14px;
+      padding: 10px 28px;
+      border-radius: 30px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      transition: all 0.3s;
+    }
+    .lang-btn:hover { border-color: #ffffff88; color: #fff; }
+
+    #main { opacity: 0; transition: opacity 0.8s; display: flex; flex-direction: column; align-items: center; }
+    #main.visible { opacity: 1; }
+
+    canvas { display: block; cursor: pointer; }
+
+    .hint {
+      font-size: 11px;
+      color: #ffffff33;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-top: 1.2rem;
+      opacity: 0;
+      transition: opacity 1s;
+    }
+    .hint.show { opacity: 1; }
+
+    .sig {
+      font-size: 12px;
+      color: #ffffff22;
+      letter-spacing: 0.08em;
+      margin-top: 0.8rem;
+    }
+
+    #dialog {
+      position: fixed; inset: 0;
+      background: #0a0812ee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s;
+      z-index: 50;
+      padding: 2rem;
+    }
+    #dialog.show { opacity: 1; pointer-events: all; }
+    .dialog-box {
+      border: 0.5px solid #ffffff22;
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      max-width: 340px;
+      text-align: center;
+    }
+    .dialog-box p {
+      color: #ffffffbb;
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: 1.2rem;
+    }
+    .dialog-box input {
+      background: transparent;
+      border: 0.5px solid #ffffff33;
+      border-radius: 30px;
+      color: #fff;
+      font-family: Georgia, serif;
+      font-size: 14px;
+      padding: 8px 20px;
+      width: 100%;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    .dialog-box input:focus { border-color: #ffffff77; }
+    .dialog-box button {
+      margin-top: 1rem;
+      background: transparent;
+      border: 0.5px solid #ffffff33;
+      border-radius: 30px;
+      color: #ffffffaa;
+      font-family: Georgia, serif;
+      font-size: 13px;
+      padding: 8px 24px;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+    .dialog-box button:hover { border-color: #ffffff77; color: #fff; }
+
+    #result {
+      position: fixed; inset: 0;
+      background: #0a0812;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s;
+      z-index: 60;
+      padding: 2rem;
+    }
+    #result.show { opacity: 1; pointer-events: all; }
+    #result img {
+      width: 240px;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 0.5px solid #ffffff22;
+    }
+    #result-msg {
+      font-size: 15px;
+      color: #ffffffcc;
+      text-align: center;
+      line-height: 1.7;
+      max-width: 300px;
+      white-space: pre-line;
+    }
+    #result-sub {
+      font-size: 11px;
+      color: #ffffff44;
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+
+<div id="lang-screen">
+  <p id="lang-prompt">choose your language</p>
+  <div class="lang-btns">
+    <button class="lang-btn" onclick="setLang('en')">English</button>
+    <button class="lang-btn" onclick="setLang('no')">Norsk</button>
+  </div>
+</div>
+
+<div id="main">
+  <canvas id="c" width="420" height="500"></canvas>
+  <div class="hint" id="hint"></div>
+  <div class="sig">kosy code with python · by Mandry aka Mandrym</div>
+</div>
+
+<div id="dialog">
+  <div class="dialog-box">
+    <p id="dialog-text"></p>
+    <input type="text" id="dialog-input" autocomplete="off" />
+    <button onclick="checkAnswer()">→</button>
+  </div>
+</div>
+
+<div id="result">
+  <img id="result-img" src="" alt="" />
+  <div id="result-msg"></div>
+  <div id="result-sub"></div>
+</div>
+
+<script>
+  const T = {
+    en: {
+      hint1: "touch me",
+      hint2: "touch me again",
+      dialogText: 'Say "thank you" in Romanian to see what\'s next 🌸',
+      dialogPlaceholder: "your answer...",
+      correctMsg: "You actually speak Romanian! 🎉\nA gift for you.",
+      correctSub: "— from Mandry",
+      wrongMsg: "You don't even speak Romanian 😂\nAnd you had me fooled for months.",
+      wrongSub: "Still cute though.",
+    },
+    no: {
+      hint1: "trykk på meg",
+      hint2: "trykk igjen",
+      dialogText: 'Si "takk" på rumensk for å se hva som skjer 🌸',
+      dialogPlaceholder: "ditt svar...",
+      correctMsg: "Du snakker faktisk rumensk! 🎉\nEn gave til deg.",
+      correctSub: "— fra Mandry",
+      wrongMsg: "Du snakker ikke engang rumensk 😂\nOg du lurte meg i måneder.",
+      wrongSub: "Fortsatt søt likevel.",
+    }
+  };
+
+  let lang = 'en';
+  let phase = 0;
+  let animating = false;
+
+  function setLang(l) {
+    lang = l;
+    document.getElementById('lang-screen').style.display = 'none';
+    document.getElementById('main').classList.add('visible');
+    document.getElementById('dialog-input').placeholder = T[lang].dialogPlaceholder;
+    startFlower();
+  }
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const W = 420, H = 500;
+  const CX = W / 2;
+  // Bouquet base — where all stems converge
+  const BOUQUET_BASE_Y = H - 55;
+
+  canvas.addEventListener('click', onTouch);
+  canvas.addEventListener('touchend', e => { e.preventDefault(); onTouch(); });
+
+  function onTouch() {
+    if (animating) return;
+    if (phase === 0) {
+      phase = 1;
+      document.getElementById('hint').classList.remove('show');
+      animating = true;
+      animateBouquet();
+    } else if (phase === 1) {
+      openDialog();
+    }
+  }
+
+  function ease(x) { return x < 0.5 ? 2*x*x : 1-Math.pow(-2*x+2,2)/2; }
+
+  // Draw one lys — stem goes from (baseX, baseY) curving to bloom
+  // baseX/baseY = where the stem starts (all converge to bouquet grip)
+  // bloomX/bloomY = where the flower head ends up
+  function drawLys(baseX, baseY, bloomX, bloomY, p, scale, hue) {
+    const s = scale;
+
+    // stem from bouquet grip point to bloom position
+    const sp = Math.min(p / 0.3, 1);
+    const midX = (baseX + bloomX) / 2 + (bloomX - baseX) * 0.2;
+    const midY = (baseY + bloomY) / 2 - 20;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY);
+    ctx.quadraticCurveTo(midX, midY, bloomX, bloomY);
+    ctx.strokeStyle = `rgba(45,130,80,${sp})`;
+    ctx.lineWidth = 2.5 * s;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.restore();
+
+    // leaf — on the stem, roughly halfway
+    const lp = Math.max(0, Math.min((p - 0.18) / 0.25, 1));
+    if (lp > 0) {
+      const lx = baseX + (bloomX - baseX) * 0.45;
+      const ly = baseY + (bloomY - baseY) * 0.45;
+      const leafAngle = Math.atan2(bloomY - baseY, bloomX - baseX) + Math.PI / 2;
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate(leafAngle);
+      ctx.globalAlpha = lp;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(28*s, -8*s, 36*s, 4*s, 8*s, 12*s);
+      ctx.bezierCurveTo(4*s, 8*s, 0, 4*s, 0, 0);
+      ctx.fillStyle = '#2a8a50';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // petals
+    const pp = Math.max(0, Math.min((p - 0.38) / 0.48, 1));
+    if (pp > 0) {
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+        const pLen = 72 * s * ease(pp);
+        const pW = 17 * s * ease(pp);
+        const spread = ease(pp) * 0.65;
+        ctx.save();
+        ctx.translate(bloomX, bloomY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(pW, -pLen*0.3, pW*1.1+spread*22, -pLen*0.75, 0, -pLen);
+        ctx.bezierCurveTo(-pW*1.1-spread*22, -pLen*0.75, -pW, -pLen*0.3, 0, 0);
+        const g = ctx.createLinearGradient(0, 0, 0, -pLen);
+        g.addColorStop(0, `hsla(${hue},65%,91%,${0.88*ease(pp)})`);
+        g.addColorStop(1, `hsla(${hue},45%,98%,${0.96*ease(pp)})`);
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(0, -5*s);
+        ctx.lineTo(0, -pLen * 0.83);
+        ctx.strokeStyle = `hsla(${hue},35%,78%,${0.22*ease(pp)})`;
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // stamens + center
+      const cp = Math.max(0, Math.min((p - 0.78) / 0.22, 1));
+      if (cp > 0) {
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          const sr = 12 * s * ease(cp);
+          ctx.save();
+          ctx.globalAlpha = ease(cp);
+          ctx.beginPath();
+          ctx.moveTo(bloomX + Math.cos(a)*5*s, bloomY + Math.sin(a)*5*s);
+          ctx.lineTo(bloomX + Math.cos(a)*sr, bloomY + Math.sin(a)*sr);
+          ctx.strokeStyle = '#d4a840';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(bloomX + Math.cos(a)*(sr+2*s), bloomY + Math.sin(a)*(sr+2*s), 2*s, 0, Math.PI*2);
+          ctx.fillStyle = '#e8c050';
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.save();
+        ctx.globalAlpha = ease(cp);
+        const cg = ctx.createRadialGradient(bloomX, bloomY, 1, bloomX, bloomY, 8*s);
+        cg.addColorStop(0, '#fff8e0');
+        cg.addColorStop(1, '#f0d060aa');
+        ctx.beginPath();
+        ctx.arc(bloomX, bloomY, 8*s, 0, Math.PI*2);
+        ctx.fillStyle = cg;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+
+  // Draw ribbon/wrap at bouquet base
+  function drawRibbon(progress) {
+    if (progress < 0.05) return;
+    const rp = Math.min((progress - 0.05) / 0.2, 1);
+    const bx = CX, by = BOUQUET_BASE_Y;
+
+    ctx.save();
+    ctx.globalAlpha = rp * 0.9;
+
+    // stems gather zone — small wrap band
+    ctx.beginPath();
+    ctx.ellipse(bx, by + 8, 22, 9, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#D4537E55';
+    ctx.fill();
+    ctx.strokeStyle = '#D4537E99';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // ribbon bow left loop
+    ctx.beginPath();
+    ctx.moveTo(bx - 2, by + 10);
+    ctx.bezierCurveTo(bx - 30, by - 8, bx - 38, by + 18, bx - 4, by + 14);
+    ctx.strokeStyle = '#D4537Ecc';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // ribbon bow right loop
+    ctx.beginPath();
+    ctx.moveTo(bx + 2, by + 10);
+    ctx.bezierCurveTo(bx + 30, by - 8, bx + 38, by + 18, bx + 4, by + 14);
+    ctx.strokeStyle = '#D4537Ecc';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // ribbon tails
+    ctx.beginPath();
+    ctx.moveTo(bx - 5, by + 16);
+    ctx.lineTo(bx - 18, by + 40);
+    ctx.strokeStyle = '#D4537E99';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(bx + 5, by + 16);
+    ctx.lineTo(bx + 20, by + 40);
+    ctx.strokeStyle = '#D4537E99';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // Bouquet: 5 flowers, all stems START from same grip point, fan out to blooms
+  const flowers = [
+    { bloomX: CX,      bloomY: 115, scale: 1,    hue: 280, delay: 0    },
+    { bloomX: CX - 72, bloomY: 145, scale: 0.85, hue: 300, delay: 0.1  },
+    { bloomX: CX + 72, bloomY: 145, scale: 0.85, hue: 260, delay: 0.1  },
+    { bloomX: CX - 135,bloomY: 195, scale: 0.72, hue: 320, delay: 0.2  },
+    { bloomX: CX + 135,bloomY: 195, scale: 0.72, hue: 240, delay: 0.2  },
+  ];
+
+  // Single flower phase: only center flower, stem from bottom center
+  let singleT = 0;
+  function startFlower() {
+    animating = true;
+    singleT = 0;
+    function step() {
+      singleT += 0.007;
+      if (singleT > 1) singleT = 1;
+      ctx.clearRect(0, 0, W, H);
+      drawLys(CX, BOUQUET_BASE_Y, flowers[0].bloomX, flowers[0].bloomY, singleT, 1, 280);
+      if (singleT < 1) requestAnimationFrame(step);
+      else {
+        animating = false;
+        setTimeout(() => {
+          const hint = document.getElementById('hint');
+          hint.textContent = T[lang].hint1;
+          hint.classList.add('show');
+        }, 400);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  let bouquetT = 0;
+  function animateBouquet() {
+    bouquetT = 0;
+    function step() {
+      bouquetT += 0.006;
+      if (bouquetT > 1) bouquetT = 1;
+      ctx.clearRect(0, 0, W, H);
+
+      // Draw ribbon first (behind stems)
+      drawRibbon(bouquetT);
+
+      // Draw all flowers — stems all start from bouquet grip
+      flowers.forEach(f => {
+        const localP = Math.max(0, Math.min((bouquetT - f.delay) / (1 - f.delay), 1));
+        drawLys(CX, BOUQUET_BASE_Y, f.bloomX, f.bloomY, localP, f.scale, f.hue);
+      });
+
+      if (bouquetT < 1) requestAnimationFrame(step);
+      else {
+        animating = false;
+        phase = 1;
+        setTimeout(() => {
+          const hint = document.getElementById('hint');
+          hint.textContent = T[lang].hint2;
+          hint.classList.add('show');
+        }, 400);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function openDialog() {
+    document.getElementById('hint').classList.remove('show');
+    document.getElementById('dialog-text').textContent = T[lang].dialogText;
+    document.getElementById('dialog').classList.add('show');
+    phase = 2;
+  }
+
+  document.getElementById('dialog-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkAnswer();
+  });
+
+  function checkAnswer() {
+    const val = document.getElementById('dialog-input').value.trim().toLowerCase();
+    const correct = ['multumesc','mulțumesc','mulţumesc','mulfumesc'].includes(val);
+    document.getElementById('dialog').classList.remove('show');
+
+    const img = document.getElementById('result-img');
+    const msg = document.getElementById('result-msg');
+    const sub = document.getElementById('result-sub');
+
+    if (correct) {
+      img.src = 'good.jpg';
+      img.alt = 'cadeau';
+      msg.textContent = T[lang].correctMsg;
+      sub.textContent = T[lang].correctSub;
+    } else {
+      img.src = 'bad.jpg';
+      img.alt = 'oops';
+      msg.textContent = T[lang].wrongMsg;
+      sub.textContent = T[lang].wrongSub;
+    }
+
+    document.getElementById('result').classList.add('show');
+  }
+</script>
+</body>
+</html>
